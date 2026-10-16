@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="110" fill="#0B0D0C" />
+  <rect x="24" y="24" width="464" height="464" rx="86" fill="none" stroke="#FF2A3A" stroke-width="8" opacity="0.4" />
+  <!-- Steering Arc -->
+  <path d="M 110,290 A 150,150 0 0,1 402,290" fill="none" stroke="#FF2A3A" stroke-width="24" stroke-linecap="round" />
+  <!-- Center Ball -->
+  <circle cx="256" cy="140" r="32" fill="#FF2A3A" />
+  <!-- Wheel Spokes / Horizon -->
+  <line x1="140" y1="280" x2="220" y2="280" stroke="#F4F5F0" stroke-width="16" stroke-linecap="round" />
+  <line x1="292" y1="280" x2="372" y2="280" stroke="#F4F5F0" stroke-width="16" stroke-linecap="round" />
+  <circle cx="256" cy="280" r="28" fill="#181E1A" stroke="#FF2A3A" stroke-width="8" />
+  <!-- Text -->
+  <text x="256" y="390" fill="#F4F5F0" font-family="monospace" font-size="44" font-weight="900" text-anchor="middle" letter-spacing="4">GYRO//PLAY</text>
+</svg>

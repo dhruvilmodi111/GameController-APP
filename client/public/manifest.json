@@ -1,0 +1,17 @@
+{
+  "short_name": "GYRO//PLAY",
+  "name": "GYRO//PLAY Racing Controller",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192 512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/controller",
+  "background_color": "#0B0D0C",
+  "theme_color": "#FF2A3A",
+  "display": "standalone",
+  "orientation": "portrait"
+}

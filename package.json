@@ -1,0 +1,25 @@
+{
+  "name": "gyro-play-root",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "shared",
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "dev": "concurrently -n \"SERVER,CLIENT\" -c \"magenta,cyan\" \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "npm run dev --workspace=@gyro-play/server",
+    "dev:client": "npm run dev --workspace=@gyro-play/client",
+    "build": "npm run build --workspace=@gyro-play/server && npm run build --workspace=@gyro-play/client",
+    "build:server": "npm run build --workspace=@gyro-play/server",
+    "build:client": "npm run build --workspace=@gyro-play/client",
+    "start": "npm run start --workspace=@gyro-play/server",
+    "test": "node tests/test-pairing-system.mjs && node tests/test-mobile-app.mjs",
+    "test:pairing": "node tests/test-pairing-system.mjs",
+    "test:mobile": "node tests/test-mobile-app.mjs"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
