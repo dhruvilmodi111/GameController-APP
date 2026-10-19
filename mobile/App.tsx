@@ -25,7 +25,7 @@ const DEFAULT_SERVER_PORT = 3001;
 function App(): React.JSX.Element {
   // Navigation: 'pairing' | 'controller'
   const [screen, setScreen] = useState<'pairing' | 'controller'>('pairing');
-  const [serverUrl, setServerUrl] = useState(`http://10.186.174.37:${DEFAULT_SERVER_PORT}`);
+  const [serverUrl, setServerUrl] = useState(`http://172.17.107.123:${DEFAULT_SERVER_PORT}`);
   const [activeRoomId, setActiveRoomId] = useState('');
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);

@@ -17,7 +17,11 @@
     "start": "npm run start --workspace=@gyro-play/server",
     "test": "node tests/test-pairing-system.mjs && node tests/test-mobile-app.mjs",
     "test:pairing": "node tests/test-pairing-system.mjs",
-    "test:mobile": "node tests/test-mobile-app.mjs"
+    "test:mobile": "node tests/test-mobile-app.mjs",
+    "mobile:start": "npm start --prefix mobile",
+    "mobile:build": "bash -c 'JAVA_HOME=/home/dhruvil-modi/.jdk-17 ANDROID_HOME=/home/dhruvil-modi/Android/Sdk cd mobile/android && ./gradlew assembleDebug'",
+    "adb:reverse": "/home/dhruvil-modi/Android/Sdk/platform-tools/adb reverse tcp:3001 tcp:3001 && /home/dhruvil-modi/Android/Sdk/platform-tools/adb reverse tcp:5173 tcp:5173",
+    "ip": "ip route get 1.1.1.1 2>/dev/null | grep -oP 'src \\K\\S+' || hostname -I | awk '{print $1}'"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

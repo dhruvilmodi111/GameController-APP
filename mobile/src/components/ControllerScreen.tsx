@@ -104,7 +104,7 @@ export const ControllerScreen: React.FC<ControllerScreenProps> = ({
 
       // Combine real hardware gyro tilt + touch pedal assist
       const throttleVal = Math.max(touchThrottle, sensor.output.tiltThrottle);
-      const brakeVal = Math.max(touchBrake, sensor.output.tiltBrake);
+      const brakeVal = touchThrottle > 0 ? touchBrake : Math.max(touchBrake, sensor.output.tiltBrake);
 
       const packet: MotionData = {
         seq,
@@ -262,12 +262,14 @@ export const ControllerScreen: React.FC<ControllerScreenProps> = ({
       </View>
 
       {/* Steering Visualizer */}
-      <SteeringGauge
-        steering={sensor.output.steering}
-        tiltDegrees={sensor.output.tiltX}
-        profile={sensorProcessor.getProfile()}
-        deadzone={sensorProcessor.getCalibration().deadzone}
-      />
+      <TouchableOpacity activeOpacity={0.85} onPress={handleQuickCenter}>
+        <SteeringGauge
+          steering={sensor.output.steering}
+          tiltDegrees={sensor.output.tiltX}
+          profile={sensorProcessor.getProfile()}
+          deadzone={sensorProcessor.getCalibration().deadzone}
+        />
+      </TouchableOpacity>
 
       {/* Driving Controls (Pedals & Buttons) */}
       <View style={styles.controlsRow}>

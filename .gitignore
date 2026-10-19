@@ -46,4 +46,5 @@ DerivedData/
 *.aab
 .metro-health-check*
 *.jsbundle
+mobile/android/app/src/main/assets/
 coverage/

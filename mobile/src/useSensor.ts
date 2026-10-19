@@ -19,7 +19,7 @@ import {
   SensorTypes,
 } from 'react-native-sensors';
 import { Subscription } from 'rxjs';
-import { Vibration } from 'react-native';
+import { Vibration, Dimensions } from 'react-native';
 import { sensorProcessor, SensorProcessor, ProcessedOutput } from './sensorProcessing';
 
 export type SensorAvailability =
@@ -56,9 +56,10 @@ export interface UseSensorReturn {
   setManualBrake: (val: number) => void;
 }
 
-const CALIB_DURATION_MS = 2000;
-const CALIB_VARIANCE_THRESHOLD = 5.0;
+const CALIB_DURATION_MS = 1800;
+const CALIB_VARIANCE_THRESHOLD = 35.0; // In deg^2 (~5.9° stddev allowable for hand tremor)
 const SENSOR_INTERVAL_MS = 16; // ~60 Hz
+const RAD_TO_DEG = 180 / Math.PI;
 const GRAVITY = 9.81;
 const ALPHA_HP = 0.8;
 
@@ -76,6 +77,18 @@ export function useSensor(): UseSensorReturn {
   const [rawAngles, setRawAngles] = useState<RawAngles>({ roll: 0, pitch: 0, yaw: 0 });
   const [acceleration, setAcceleration] = useState<AccelerationData>({ x: 0, y: 0, z: 0 });
 
+  // Orientation tracking (portrait vs landscape)
+  const [isLandscape, setIsLandscape] = useState(
+    () => Dimensions.get('window').width > Dimensions.get('window').height
+  );
+
+  useEffect(() => {
+    const sub = Dimensions.addEventListener('change', ({ window }) => {
+      setIsLandscape(window.width > window.height);
+    });
+    return () => sub?.remove();
+  }, []);
+
   // Angle tracking refs
   const anglesRef = useRef<RawAngles>({ roll: 0, pitch: 0, yaw: 0 });
   const lastTimestampRef = useRef<number | null>(null);
@@ -86,8 +99,9 @@ export function useSensor(): UseSensorReturn {
   const manualThrottleRef = useRef<number | null>(null);
   const manualBrakeRef = useRef<number | null>(null);
 
-  // Calibration samples
-  const calibSamplesRef = useRef<number[]>([]);
+  // Calibration samples & flag
+  const isCalibratingRef = useRef(false);
+  const calibSamplesRef = useRef<{ roll: number; pitch: number }[]>([]);
   const calibTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Subscriptions
@@ -97,12 +111,12 @@ export function useSensor(): UseSensorReturn {
 
   // ─── Process & Emit Update ────────────────────────────────────────────────
   const processAndSetOutput = useCallback((roll: number, pitch: number, yaw: number) => {
-    // If in calibration, accumulate roll samples
-    if (calibSamplesRef.current !== null) {
-      calibSamplesRef.current.push(roll);
+    // Only accumulate samples when explicitly running calibration
+    if (isCalibratingRef.current) {
+      calibSamplesRef.current.push({ roll, pitch });
     }
 
-    const processed = sensorProcessor.processOrientation(roll, pitch, yaw, false);
+    const processed = sensorProcessor.processOrientation(roll, pitch, yaw, isLandscape);
 
     // Apply manual overrides if user is actively using on-screen touch controls
     if (manualSteeringRef.current !== null) {
@@ -116,7 +130,7 @@ export function useSensor(): UseSensorReturn {
     }
 
     setOutput(processed);
-  }, []);
+  }, [isLandscape]);
 
   // ─── Sensor Setup ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -139,11 +153,11 @@ export function useSensor(): UseSensorReturn {
             sensorActive = true;
             setAvailability('available');
           }
-          // data contains pitch, roll, yaw (in degrees or rads depending on platform)
-          // react-native-sensors orientation angles are in degrees:
-          const roll = typeof data.roll === 'number' ? data.roll : 0;
-          const pitch = typeof data.pitch === 'number' ? data.pitch : 0;
-          const yaw = typeof data.yaw === 'number' ? data.yaw : 0;
+          // react-native-sensors on Android yields orientation in radians.
+          // Convert to degrees so steering calculation and HUD readouts are exact.
+          const roll = (typeof data.roll === 'number' ? data.roll : 0) * RAD_TO_DEG;
+          const pitch = (typeof data.pitch === 'number' ? data.pitch : 0) * RAD_TO_DEG;
+          const yaw = (typeof data.yaw === 'number' ? data.yaw : 0) * RAD_TO_DEG;
 
           anglesRef.current = { roll, pitch, yaw };
           setRawAngles({ roll, pitch, yaw });
@@ -251,6 +265,7 @@ export function useSensor(): UseSensorReturn {
   // ─── Calibration ─────────────────────────────────────────────────────────
   const startCalibration = useCallback(() => {
     calibSamplesRef.current = [];
+    isCalibratingRef.current = true;
     setCalibrationState('collecting');
 
     try {
@@ -258,23 +273,28 @@ export function useSensor(): UseSensorReturn {
     } catch { /* ignore */ }
 
     calibTimerRef.current = setTimeout(() => {
+      isCalibratingRef.current = false;
       const samples = calibSamplesRef.current;
-      const variance = SensorProcessor.computeVariance(samples);
+      const rollVariance = SensorProcessor.computeVariance(samples.map(s => s.roll));
+      const pitchVariance = SensorProcessor.computeVariance(samples.map(s => s.pitch));
 
-      if (samples.length < 5 || variance > CALIB_VARIANCE_THRESHOLD) {
+      if (
+        samples.length < 5 ||
+        rollVariance > CALIB_VARIANCE_THRESHOLD ||
+        pitchVariance > CALIB_VARIANCE_THRESHOLD
+      ) {
         setCalibrationState('unstable');
         calibSamplesRef.current = [];
         try {
           Vibration.vibrate([0, 80, 50, 80]);
         } catch { /* ignore */ }
       } else {
-        const meanRoll = samples.reduce((a, b) => a + b, 0) / samples.length;
-        const { pitch, yaw } = anglesRef.current;
+        const meanRoll = samples.reduce((a, b) => a + b.roll, 0) / samples.length;
+        const meanPitch = samples.reduce((a, b) => a + b.pitch, 0) / samples.length;
+        const { yaw } = anglesRef.current;
 
-        sensorProcessor.calibrateCurrentPosition(meanRoll, pitch, yaw);
+        sensorProcessor.calibrateCurrentPosition(meanRoll, meanPitch, yaw);
         sensorProcessor.resetFilterState();
-
-        anglesRef.current = { roll: 0, pitch, yaw };
 
         setCalibrationState('done');
         calibSamplesRef.current = [];
@@ -286,6 +306,7 @@ export function useSensor(): UseSensorReturn {
   }, []);
 
   const cancelCalibration = useCallback(() => {
+    isCalibratingRef.current = false;
     if (calibTimerRef.current) {
       clearTimeout(calibTimerRef.current);
       calibTimerRef.current = null;

@@ -1,176 +1,100 @@
-# GYRO//PLAY — Your Phone. Your Motion. Your Game.
+# GYRO//PLAY 🏎️🎮
 
-**Turn your smartphone into a real-time motion controller for high-speed browser racing.**
+**Turn your smartphone into a real-time motion game controller for high-speed desktop browser racing.**
 
-GYRO//PLAY bridges your smartphone's internal gyroscope and accelerometer with a desktop web browser using ultra-low-latency WebSockets. Tilt your phone like a real steering wheel, hit the ergonomic thumb triggers for Gas, Brake, and Nitro boost, and watch your hypercar drift around championship racing circuits in real-time.
-
-GYRO//PLAY features both a **Web-based mobile controller** (zero-install browser link) and a genuine **React Native Android Mobile App** (`mobile/`) with direct native sensor hardware access.
+GYRO//PLAY bridges your smartphone's native gyroscope and accelerometer with a desktop browser racing game over ultra-low-latency WebSockets (~60 FPS). Tilt your phone like a real steering wheel, trigger touch pedals for Gas, Brake, Handbrake, and Nitro boost, and watch your car drift in real-time.
 
 ---
 
-## 🏎️ Tech Stack & Architecture
+## 🏗️ Architecture & Tech Stack
 
-- **React Native Android App (`mobile/`)**: Genuine Native Android App built with React Native 0.76, direct hardware IMU integration via `react-native-sensors` (orientation fusion + gyro/accelerometer complementary filter at ~60Hz), native UI gauges, haptic feedback (`Vibration`), and low-latency `socket.io-client`.
-- **Frontend Game (`client/`)**: React 18, TypeScript, Vite, HTML5 Canvas 2D Game Engine, Web Audio API procedural synthesizer, responsive HUD.
-- **Backend Server (`server/`)**: Node.js, Express, Socket.IO 4.8, LAN IP auto-detection, in-memory RoomManager with session isolation and token persistence.
-- **Shared (`shared/`)**: Shared TypeScript interfaces (`@gyro-play/shared`), Socket.IO event contracts, telemetry, and motion payloads.
-- **Design System**: Premium minimalism with futuristic neon racing identity (`#0a0e17` background, `#121824` elevated surfaces, `#00ff88` electric lime accent, `#06b6d4` cyan boost).
+| Component | Technology | Description |
+|---|---|---|
+| **Desktop Game (`client/`)** | React 18, TypeScript, Vite, HTML5 Canvas 2D | 60 FPS physics-based racing engine with audio effects and HUD |
+| **Backend Server (`server/`)** | Node.js, Express, Socket.IO 4.8 | Real-time Room Manager, LAN auto-discovery, packet clamping & sync |
+| **Mobile App (`mobile/`)** | React Native 0.76, `react-native-sensors` | Native IMU sensor fusion, haptics, steering gauge, and touch pedals |
+| **Shared Contracts (`shared/`)** | TypeScript | Shared motion packets, telemetry, and room protocol types |
 
 ---
 
-## 📱 React Native Android App (`mobile/`)
+## ⚡ Quick Start
 
-The mobile controller is implemented as a genuine React Native Android app with native UI components and real sensor hardware streaming.
-
-### 🌟 Native App Features
-
-1. **Direct IMU Hardware Sensing**:
-   - Accesses Android hardware orientation fusion (`pitch`, `roll`, `yaw`) and 60Hz gyroscope angular velocity with accelerometer gravity compensation.
-   - `android.permission.HIGH_SAMPLING_RATE_SENSORS` configured in `AndroidManifest.xml` to prevent Android from throttling sensor events.
-2. **Zero-Drift Calibration**:
-   - Interactive 2-second calibration dialog. Measures variance across samples (`computeVariance`) to verify the user is holding still before storing zero-point offsets.
-3. **Smooth & Precision Driving Profiles**:
-   - **Smooth Mode**: Low-pass filtered (alpha = 0.18), relaxed 30° roll, 6% deadband for gentle highway curves.
-   - **Precision Mode**: Snappy response (alpha = 0.42), tight 22° roll, 3% deadband for fast hairpin turns.
-4. **Native Steering Gauge**:
-   - High-contrast neon gauge with center zero line, deadzone bounds, dynamic lime-green fill, and live degrees readout.
-5. **Ergonomic Pedals & Haptics**:
-   - Left-side Brake pedal and Handbrake trigger.
-   - Right-side Throttle pedal and Nitro Boost trigger.
-   - Haptic vibration feedback on button presses, calibration completion, and in-game collisions.
-6. **Live Telemetry HUD**:
-   - Displays real-time speed in km/h, current lap, lap time, and remaining nitro fuel transmitted from the desktop game.
-7. **Safe Disarm & Connection Recovery**:
-   - Disarm button locks controls to safe neutral `{ steering: 0, throttle: 0, brake: 0 }`.
-   - If Wi-Fi flickers, the app automatically reconnects with its stored `controllerToken` without kicking the player out.
-
-### 🛠️ Mobile Setup & Build Guide
-
-#### Prerequisites
-- **Node.js** >= 18
-- **Java JDK** 17 or 21 (`JAVA_HOME` configured)
-- **Android SDK** (API 34/35) and Android command-line tools / Android Studio (`ANDROID_HOME` configured)
-- Connected Android phone with **USB Debugging** enabled (or Android Virtual Device emulator)
-
-#### 1. Running in Development Mode
-Start the Metro JavaScript bundler:
+### 1. Install & Start Backend + Game
 ```bash
-cd mobile
-npm start
+# Clone the repository
+git clone https://github.com/dhruvilmodi111/GameController-APP.git
+cd GameController-APP
+
+# Install dependencies and start both server & desktop client
+npm install
+npm run dev
 ```
 
-In a separate terminal, launch the app on your Android device or emulator:
-```bash
-cd mobile
-npm run android
-```
+- **Desktop Game**: `http://localhost:5173`
+- **Socket.IO Server**: `http://localhost:3001`
 
-#### 2. Building the Installable Android APK
-To compile a standalone debug APK without opening Android Studio:
+---
+
+## 📱 Connecting Your Phone
+
+When you open the game on your computer, click **"CONNECT CONTROLLER"** to display your unique 4-letter Room Code (e.g., `ABCD`).
+
+### Option 1: Via USB Cable (Recommended — Zero Network Configuration)
+If your phone is plugged into your laptop via USB with USB Debugging enabled:
 ```bash
+adb reverse tcp:3001 tcp:3001
+```
+1. Open the mobile app.
+2. Keep the server host as `http://localhost:3001`.
+3. Enter the 4-letter Room Code and tap **CONNECT**.
+
+### Option 2: Over Local Wi-Fi
+1. Ensure both your laptop and phone are on the **same Wi-Fi network**.
+2. Find your laptop's local IP address (`ip route` on Linux, `ipconfig` on Windows).
+3. In the mobile app, tap the **Gear / Settings** icon and set the Server Host to `http://<YOUR_LAPTOP_IP>:3001`.
+4. Enter the 4-letter Room Code and tap **CONNECT**.
+
+---
+
+## 🕹️ Driving Controls & Features
+
+- **Tilt Steering**: Tilt phone left/right to steer. Automatically detects and supports both **Landscape** (steering wheel posture) and **Portrait** orientations.
+- **1-Tap Quick Calibrate**: Tap anywhere on the circular **Steering Gauge** (or tap **CALIBRATE**) to instantly lock your current holding position as neutral zero.
+- **Gas / Throttle Pedal**: Press and hold the right green pedal to accelerate. Pressing Gas automatically prioritizes forward drive over accidental tilt braking.
+- **Brake Pedal & Handbrake**: Press the red pedal to decelerate or hold the handbrake to initiate high-speed drift.
+- **Nitro Boost**: Tap NITRO to engage instant high-speed propulsion.
+- **Driving Profiles**: Toggle between **Smooth** (relaxed highway curves) and **Precision** (sharp hairpins) in Settings.
+- **Haptic Vibration**: Real-time tactile feedback on pedal taps, calibration, and in-game collisions.
+
+---
+
+## 📦 Building & Installing the Android APK
+
+If you want to compile and install the standalone native Android APK directly onto your phone:
+
+```bash
+# 1. Build the APK
 cd mobile/android
 ./gradlew assembleDebug
-```
 
-The generated APK will be located at:
-```
-mobile/android/app/build/outputs/apk/debug/app-debug.apk
-```
-
-To install the compiled APK directly onto your connected phone via ADB:
-```bash
+# 2. Install to connected device via ADB
 adb install -r mobile/android/app/build/outputs/apk/debug/app-debug.apk
 ```
 
 ---
 
-## 📡 Phone-to-Laptop Pairing & Networking Guide
+## 🧪 Testing
 
-### 1. Local Network Requirements
-- **Same Wi-Fi Network**: Both devices must be connected to the same local Wi-Fi router / access point (or your laptop's Wi-Fi hotspot).
-- **AP Isolation**: Ensure your Wi-Fi router does not have "AP Isolation" or "Client Isolation" enabled.
+The project includes an end-to-end test suite verifying socket pairing, room isolation, sensor math, deadzone filtering, and packet clamping:
 
-### 2. Firewall & Port Requirements
-The application utilizes two ports:
-- **Port 5173 (TCP)**: Vite Web Server (delivers desktop game and browser controller).
-- **Port 3001 (TCP)**: Backend Express and Socket.IO server.
-
-**Linux (UFW):**
-```bash
-sudo ufw allow 5173/tcp
-sudo ufw allow 3001/tcp
-```
-
-**Windows Defender Firewall:**
-When launching `npm run dev`, click **"Allow Access"** on the Windows Defender prompt for Node.js.
-
-### 3. Reachable LAN IP & QR Code Generation
-- The backend automatically discovers the host laptop's active network interface (e.g. `192.168.x.x`), avoiding `localhost` and virtual container bridges.
-- The desktop pairing dialog generates a high-contrast QR code pointing to:
-  `http://<LAPTOP_LAN_IP>:5173/controller?room=<ROOM_ID>`
-- In the React Native app, simply enter the 6-letter Room Code displayed on your desktop screen. If needed, toggle "Configure Server Host" to enter your laptop's LAN IP.
-
----
-
-## 🔒 Session Security & Lifecycle States
-
-The pairing system enforces strict server-side session membership:
-1. **Waiting**: Desktop session is live (`ROOM ABCD`), listening for controller connection.
-2. **Connected**: The phone joins with its device metadata. Server validates that the room exists, host is online, and issues a unique `controllerToken`.
-3. **Session Isolation**: Third-party takeover attempts are blocked. Unauthorized packets from unverified sockets are discarded.
-4. **Reconnecting**: If Wi-Fi drops, the phone uses its stored `controllerToken` to resume its driving session without disruption.
-5. **Safe Disarm**: When the controller disconnects or pauses, safe neutral controls `{ steering: 0, throttle: 0, brake: 0 }` are immediately dispatched to prevent the car from running away.
-
----
-
-## 🚀 Running the Application
-
-### 1. Install Root Dependencies
-```bash
-npm install
-```
-
-### 2. Start Backend & Desktop Client Concurrently
-```bash
-npm run dev
-```
-- Desktop Game: `http://localhost:5173`
-- Backend Server: `http://localhost:3001`
-
-### 3. Typecheck All Workspaces
-```bash
-npm run build:server
-npm run build:client
-cd mobile && npx tsc --noEmit
-```
-
----
-
-## 🧪 Automated Test Verification
-
-GYRO//PLAY includes 38 comprehensive automated tests:
-1. **Pairing System Integration Tests (`tests/test-pairing-system.mjs`)**:
-   - Server health check & room creation
-   - Invalid room rejection & session isolation
-   - Token issuance & reconnection recovery
-   - Ping-sync round trip latency measurement
-   - Motion packet clamping & sequence number validation
-   - Disconnect handling & safe neutral packet dispatch
-2. **Mobile Controller Engine Tests (`tests/test-mobile-app.mjs`)**:
-   - Hardware IMU zero-drift calibration & variance testing
-   - Deadband thresholding & smooth rescaling
-   - Sensitivity scaling & strict [-1.0, 1.0] clamping
-   - Smooth vs Precision profile configurations
-   - Inverted steering logic
-   - End-to-end Socket.IO motion packet streaming from mobile client to host
-
-### Run All Tests
 ```bash
 npm test
 ```
-**Output:**
 ```
-=======================================================
-  Total: 38 tests  |  ✅ 38 Passed  |  ❌ 0 Failed
-=======================================================
+Total: 38 tests  |  ✅ 38 Passed  |  ❌ 0 Failed
 ```
+
+---
+
+## 📄 License
+MIT

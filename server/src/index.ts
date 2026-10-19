@@ -1,4 +1,6 @@
 import http from 'node:http';
+import path from 'node:path';
+import fs from 'node:fs';
 import express from 'express';
 import cors from 'cors';
 import { Server } from 'socket.io';
@@ -36,6 +38,16 @@ app.get('/api/health', (_req, res) => {
   });
 });
 
+// REST Download APK endpoint
+app.get('/api/download-apk', (_req, res) => {
+  const apkPath = path.resolve(process.cwd(), '../mobile/android/app/build/outputs/apk/debug/app-debug.apk');
+  if (fs.existsSync(apkPath)) {
+    res.download(apkPath, 'gyro-play-controller.apk');
+  } else {
+    res.status(404).send('APK not found. Please build it first.');
+  }
+});
+
 // REST Network & Server Info (used by Desktop client to build QR code)
 app.get('/api/info', (_req, res) => {
   const lanIp = getLocalIpAddress();
@@ -45,6 +57,7 @@ app.get('/api/info', (_req, res) => {
     serverPort: SERVER_PORT,
     clientPort: CLIENT_PORT,
     availableIps,
+    apkDownloadUrl: `http://${lanIp}:${SERVER_PORT}/api/download-apk`,
     activeRooms: roomManager.getAllRoomsCount(),
     controllerUrlTemplate: lanIp.startsWith('http://') || lanIp.startsWith('https://')
       ? `${lanIp.replace(/\/$/, '')}/controller?room={ROOM_ID}`
